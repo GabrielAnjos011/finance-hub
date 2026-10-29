@@ -25,7 +25,9 @@ import { FlowChart, SpendingChart } from '../../components/charts/FinanceCharts'
 import { categoryTotals, recognizedDate } from '../financial-health/engine';
 import { money } from '../../utils/money';
 import { dateLabel } from '../../utils/dates';
-export default function Dashboard({ summary, range, month }) {
+import SetupGuide from '../onboarding/SetupGuide';
+import DailyReview from '../onboarding/DailyReview';
+export default function Dashboard({ summary, range, month, at }) {
   const { data, openForm } = useWorkspace(),
     navigate = useNavigate();
   const categories = categoryTotals(data.transactions, range);
@@ -49,6 +51,8 @@ export default function Dashboard({ summary, range, month }) {
           </button>
         }
       />
+      <SetupGuide />
+      <DailyReview date={at} />
       <div className="stats-grid">
         <Stat
           label="Patrimônio financeiro"
@@ -86,10 +90,14 @@ export default function Dashboard({ summary, range, month }) {
               Tranquilidade para planejar.
             </h2>
             <div className="spend-amount">
-              {data.accounts.length ? money(summary.available) : '—'}
+              {summary.projectionReady ? money(summary.available) : '—'}
               <ArrowUpRight size={28} />
             </div>
-            <p>Disponível estimado até {dateLabel(summary.salary)}.</p>
+            <p>
+              {summary.projectionReady
+                ? `Disponível estimado até ${dateLabel(summary.salary)}.`
+                : 'Informe uma conta e o dia do salário para calcular sua disponibilidade.'}
+            </p>
             <div className="spend-breakdown">
               <span>
                 Dinheiro livre <strong>{money(summary.free)}</strong>

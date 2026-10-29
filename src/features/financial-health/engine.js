@@ -53,6 +53,7 @@ export function invoices(transactions) {
 export function overview(data, range, at) {
   const { accounts = [], transactions = [], funds = [], settings = [] } = data;
   const config = settings.find((s) => s.id === 'preferences') || {};
+  const projectionReady = Boolean(accounts.length && config.salaryDay);
   const items = transactions.filter(
     (t) =>
       t.status === 'confirmed' &&
@@ -142,6 +143,7 @@ export function overview(data, range, at) {
       'Informe contas, renda confirmada e despesas essenciais; confirme os dados a cada 45 dias.',
     );
   return {
+    projectionReady,
     income,
     expenses,
     monthly: income - expenses,
@@ -184,7 +186,7 @@ export function alerts(data, summary, at) {
         t.date < at ? 'Pagamento previsto em atraso.' : 'Pagamento previsto para os próximos dias.',
       amountCents: t.amountCents,
     });
-  if (summary.available < 0)
+  if (summary.projectionReady && summary.available < 0)
     results.push({
       id: 'projection',
       severity: 'critical',

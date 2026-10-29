@@ -173,6 +173,12 @@ export function Login() {
               <button className="secondary wide" onClick={() => useFinance.getState().enterDemo()}>
                 Explorar demonstração <ArrowUpRight size={17} />
               </button>
+              <button
+                className="text-button wide"
+                onClick={() => useFinance.getState().enterDemo({ empty: true })}
+              >
+                Experimentar do zero
+              </button>
               <p className="micro">
                 Ambiente de exemplo com dados fictícios.
                 <br />

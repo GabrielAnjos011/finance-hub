@@ -84,6 +84,50 @@ afterAll(async () => {
   await env?.cleanup();
 });
 describe('Isolamento e schemas no SDK direto', () => {
+  it('revisão do dia permanece privada no schema atual', async () => {
+    const client = db('alice');
+    await assertSucceeds(
+      setDoc(doc(client, 'users/alice/alertStates/daily_review_2026-10-29'), {
+        ownerUid: 'alice',
+        schemaVersion: 1,
+        revision: 1,
+        read: true,
+        snoozeUntil: '2026-10-29',
+      }),
+    );
+    await assertFails(getDoc(doc(db('bob'), 'users/alice/alertStates/daily_review_2026-10-29')));
+  });
+  it('planos com valor zero podem começar sem conta e continuam isolados', async () => {
+    await assertSucceeds(
+      setDoc(doc(db('alice'), 'users/alice/goals/new'), {
+        ownerUid: 'alice',
+        schemaVersion: 1,
+        revision: 1,
+        name: 'Plano',
+        targetCents: 100000,
+        savedCents: 0,
+        monthlyCents: 0,
+        deadline: '2027-01-01',
+        priority: 'medium',
+        description: '',
+        accountId: '',
+      }),
+    );
+    await assertSucceeds(
+      setDoc(doc(db('alice'), 'users/alice/funds/new'), {
+        ownerUid: 'alice',
+        schemaVersion: 1,
+        revision: 1,
+        name: 'Proteção',
+        purpose: 'emergency',
+        accountId: '',
+        allocatedCents: 0,
+        targetCents: 100000,
+        monthlyCents: 0,
+      }),
+    );
+    await assertFails(getDoc(doc(db('bob'), 'users/alice/goals/new')));
+  });
   it('A lê sua conta', async () =>
     assertSucceeds(getDoc(doc(db('alice'), 'users/alice/accounts/a'))));
   it('B não lê A mesmo sabendo o ID', async () =>

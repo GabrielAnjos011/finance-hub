@@ -1,43 +1,41 @@
-# Evidências de validação local — 28/10/2026
+# Evidências de validação local — 29/10/2026
 
-O repositório começou vazio. Esta entrega contém uma implementação inicial integrada; nenhuma conta Firebase ou repositório GitHub de produção foi criado. Os passos para isso estão em COMECE_AQUI.md.
+Atualização de experiência dos itens 1 a 4, descrita em [UX_UPDATE.md](UX_UPDATE.md). O proprietário informou que a primeira versão já foi publicada. Esta validação se refere às alterações locais desta atualização; não comprova uma nova implantação no GitHub Pages.
 
 ## Resultado
 
-| Verificação               | Resultado                                                                                                             |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Vitest + Testing Library  | 42 testes da aplicação, incluindo recuperação sem exigir senha                                                        |
-| Firebase Emulator Suite   | 32 testes aprovados (31 regras + duas sessões reais no Authentication Emulator em um fluxo integrado)                 |
-| Playwright Chromium       | 21 testes aprovados, sete fluxos repetidos em desktop, viewport Android e viewport iPhone                             |
-| Vite produção             | Build local aprovado; manifest, service worker e ícones emitidos                                                      |
-| Subdiretório              | `npm run test:static` aprovado: HTML, JavaScript, CSS, ícones, manifest e service worker servidos sob `/finance-hub/` |
-| Auditoria npm de produção | `npm audit --omit=dev`: zero avisos conhecidos na consulta após correção de dependências                              |
+| Verificação                  | Resultado                                                                                                 |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Vitest + Testing Library     | 58 testes aprovados, incluindo primeiro uso, pré-requisitos e regras dos formulários                      |
+| Firebase Emulator Suite      | 34 testes aprovados, incluindo isolamento da revisão diária e planos de saldo zero sem conta              |
+| Playwright                   | 51 testes aprovados: 17 cenários em desktop Chromium, Pixel 7 Chromium e viewport iPhone 13 WebKit        |
+| Vite produção                | Build aprovado; manifest, service worker e ícones emitidos                                                |
+| GitHub Pages em subdiretório | `npm run test:static` aprovado sob `/finance-hub/`: HTML, scripts, CSS, ícones, manifest e service worker |
 
-Os testes de navegador incluem cadastro de conta, lançamento com conferência do saldo, busca, logout, consentimento para relatório IA, prévia CSV, leitura efetiva de XLSX e PDF sintéticos, manifest/SW/ícones, ausência de overflow e contraste do texto no tema escuro. Capturas reais do build em `test-results/dashboard-desktop.png`, `dashboard-android.png` e `dashboard-iphone.png`, todas com dados fictícios sinalizados.
+Os testes usam dados sintéticos. O Firebase está substituído por mock nos testes unitários; o build E2E recebe configuração Firebase vazia; os testes de regras usam somente o projeto `demo-finance-hub` nos emuladores. O `.env` de produção não é usado para gravar dados de teste.
 
-## Correções motivadas pelas verificações
+## Fluxos conferidos
 
-- Compatibilidade do particionamento de chunks com o Vite instalado.
-- Diretório de sockets Java no Windows para iniciar o emulador.
-- Atualização do estado local somente após confirmação do servidor, sem releitura completa a cada gravação.
-- Proteção dos valores destinados a objetivos, além das reservas, na disponibilidade.
-- Reserva consolidada limitada ao saldo real da conta, sem duplicar alocações.
-- IDs estáveis para repetir um mesmo envio e conservação de centavos nas parcelas.
-- Edição de ocorrência recorrente sem recriar a série nem sobrescrever a mesma ocorrência em vários meses.
-- Bloqueio na interface de pagamento acima do saldo da fatura e de referências inexistentes.
-- Rótulos acessíveis explícitos em selects e inputs dos formulários.
-- Registro do service worker já na tela de login.
-- Leitura XLSX ajustada à API instalada e encerramento correto do worker PDF.
-- Contraste do tema escuro e gráficos sem animação que ocultasse temporariamente os valores nas capturas.
-- Substituição do leitor Excel e override gRPC corrigido; auditoria de produção sem avisos conhecidos.
-- Recuperação de senha com validação apenas do e-mail, coberta por regressão.
+- Primeiro lançamento cria uma conta antes de pedir os demais dados; salva a despesa e confere o saldo.
+- Cadastro e cancelamento de conta auxiliar preservam o rascunho. Transferência conserva o total entre as contas; recorrência não antecipa o dinheiro dos próximos meses.
+- Objetivos e reservas podem começar com zero sem conta. Um valor já guardado exige vínculo; é possível voltar a zero sem reiniciar o formulário. Alocações acima do saldo disponível são impedidas antes de salvar.
+- Cartão criado dentro da compra, divisão em parcelas e pagamento parcial de fatura existente sem duplicar despesa. Cartão sem fatura permite trocar a escolha no próprio aviso.
+- Mês fechado é identificado antes do preenchimento. O usuário pode corrigir a data ou reabrir o mês com confirmação e histórico.
+- Datas futuras permanecem previstas. Revisão diária e desfazer não criam lançamentos nem confirmam pagamentos.
+- Importação bloqueia o arquivo até escolher a conta e mantém seleção por índice na prévia paginada.
+- Botões de revisão dos primeiros passos abrem os módulos existentes. Um toque na margem interna do diálogo não descarta o formulário.
+- Campos mobile têm fonte de pelo menos 16 px, teclado decimal e zoom manual permitido. A simulação de teclado reduz a altura visível, preserva o valor digitado e mantém a ação Salvar visível.
+- Fluxos anteriores de login demo/logout, pesquisa, relatórios com consentimento, importação CSV/XLSX/PDF, contraste, overflow e recursos PWA continuam passando.
 
-## Escopo dos arquivos
+As capturas do build são geradas em `test-results/dashboard-*.png` e `test-results/guided-form-*.png`, diretório ignorado pelo Git. As imagens usam somente demonstração sinalizada. Prévias desta atualização também ficam em `docs/`.
 
-`src/app` controla rotas/layout; `src/features` contém os módulos reais; `src/services` contém Firebase, repositórios, schemas, importação e exportação; `src/store` mantém somente memória; `src/utils` concentra moeda/datas. Regras e índices ficam na raiz; CI em `.github/workflows/deploy.yml`; testes em `tests/`.
+## Conferência no aparelho após a publicação
 
-## Pendências concretas
+1. Publicar esta atualização pelo workflow existente do GitHub Pages e aguardar a execução terminar.
+2. Abrir o app instalado e usar **Atualizar** quando aparecer. Não é necessário desinstalar nem apagar dados.
+3. Abrir um lançamento, tocar em valor e descrição, alternar campos e rolar com o teclado aberto. Conferir que não ocorre zoom automático e que é possível salvar.
+4. Conferir criar uma conta/cartão dentro do lançamento, voltar ao formulário e cancelar o cadastro auxiliar. Para simular o primeiro uso sem criar dados pessoais, usar **Experimentar do zero** na tela de acesso.
 
-Configuração Firebase de produção, publicação de regras, criação de usuários, autorização por UID, repositório remoto, execução real de GitHub Actions, URL final, instalação/atualização em aparelhos físicos e verificação Safari permanecem pendentes. Não se afirma que essas validações foram feitas. Recursos avançados ainda ausentes estão enumerados em ROADMAP.md.
+WebKit automatizado e viewports móveis não substituem Safari/Chrome em aparelho físico, teclado nativo, orientação e instalação real do PWA. Não houve nova verificação de login, e-mail ou regras publicadas no Firebase de produção, nem execução remota de GitHub Actions desta atualização.
 
-Auditoria npm não é pentest e não garante ausência de falhas. Os testes de viewport iPhone usam Chromium, não Safari. Os emuladores comprovam os cenários escritos contra regras locais; as mesmas regras precisam ser publicadas no projeto correto para proteger dados reais.
+Push diário não faz parte desta entrega. Nenhuma nova variável GitHub, coleção ou alteração de regras Firestore é necessária para os itens 1 a 4.

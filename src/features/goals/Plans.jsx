@@ -119,10 +119,9 @@ export default function Plans({ summary, reserve = false }) {
                   </strong>
                 </div>
                 <p className="micro">
-                  Guardado em{' '}
-                  {data.accounts.find((a) => a.id === item.accountId)?.name ||
-                    'conta não encontrada'}
-                  . Valores não são somados novamente ao patrimônio.
+                  {saved > 0
+                    ? `Guardado em ${data.accounts.find((a) => a.id === item.accountId)?.name || 'conta a revisar'}. O valor já faz parte do saldo dessa conta.`
+                    : 'Seu plano começou do zero. Vincule uma conta quando já tiver dinheiro guardado.'}
                 </p>
                 <div className="record-actions">
                   <button className="text-button" onClick={() => openForm(module, item)}>

@@ -41,5 +41,12 @@ export const goalFields = (accounts) => [
     default: 'medium',
   },
   { name: 'accountId', label: 'Conta que guarda o valor', options: options(accounts) },
-  { name: 'description', label: 'Descrição', optional: true, type: 'textarea', full: true },
+  {
+    name: 'description',
+    label: 'Descrição',
+    optional: true,
+    type: 'textarea',
+    full: true,
+    maxLength: 500,
+  },
 ];

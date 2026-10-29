@@ -31,8 +31,12 @@ export default function Health({ summary }) {
         />
         <Stat
           label="Projeção até o salário"
-          value={money(summary.available)}
-          detail="Dinheiro livre menos compromissos e margem"
+          value={summary.projectionReady ? money(summary.available) : 'A configurar'}
+          detail={
+            summary.projectionReady
+              ? 'Dinheiro livre menos compromissos e margem'
+              : 'Informe sua conta e o dia do salário para calcular'
+          }
         />
       </div>
       <div className="two-columns">

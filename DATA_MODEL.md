@@ -30,6 +30,8 @@ Todos os documentos privados possuem `ownerUid`, `schemaVersion: 1` e `revision`
 - `confirmed` significa verificado pelo usuário. `planned` nunca altera saldo efetivo nem obrigação confirmada.
 - Investimento é uma conta do tipo `investment`. Posição atual não é somada outra vez por um documento separado.
 - Reservas e objetivos são destinações do saldo da conta. O formulário impede destinações acima do saldo, mas um gasto posterior pode reduzir a cobertura: conferir saldos é necessário.
+- Objetivos e reservas podem começar sem conta (`accountId: ''`) quando `savedCents` / `allocatedCents` é zero. Um valor positivo exige conta existente e saldo disponível; o alvo e o aporte planejado não criam dinheiro.
+- A revisão manual diária usa `users/{uid}/alertStates/daily_review_YYYY-MM-DD`: `read` registra revisão/desfazer e `snoozeUntil` contém a data civil. Não é confirmação de pagamento nem agendamento de notificação. Usa o schema privado existente, sem migração.
 - Parcelas têm um mesmo `groupId`, números de parcela e valores cuja soma é exatamente o total da compra. `date` preserva a data da compra; `competence` e `dueDate` variam.
 
 ## Consultas e índices

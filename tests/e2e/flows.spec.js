@@ -20,16 +20,14 @@ test('conta, lançamento, pesquisa e saldo real', async ({ page }) => {
   await page.getByRole('button', { name: 'Adicionar conta', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Nome da conta').fill('Carteira de teste');
-  await dialog.getByLabel('Saldo inicial (R$)').fill('100,00');
+  await dialog.getByLabel('Saldo atual (R$)').fill('100,00');
   await dialog.getByRole('button', { name: 'Salvar', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Carteira de teste' })).toBeVisible();
   await page.goto('/#/lancamentos');
   await page.getByRole('button', { name: 'Novo lançamento' }).click();
   await dialog.getByLabel('Descrição', { exact: true }).fill('Café de teste');
-  await dialog.getByLabel('Valor total (R$)').fill('12,34');
-  await dialog
-    .getByLabel('Conta de origem / pagamento')
-    .selectOption({ label: 'Carteira de teste' });
+  await dialog.getByLabel('Valor (R$)').fill('12,34');
+  await dialog.getByLabel('Qual conta?').selectOption({ label: 'Carteira de teste' });
   await dialog.getByRole('button', { name: 'Salvar', exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await page.getByRole('textbox', { name: 'Buscar lançamentos' }).fill('Café de teste');
@@ -113,6 +111,7 @@ test('captura visual e tema escuro mantêm texto legível', async ({ page }, tes
   await page.goto('/#/configuracoes');
   await page.getByRole('button', { name: 'Editar preferências' }).click();
   const dialog = page.getByRole('dialog');
+  await dialog.locator('summary').filter({ hasText: 'Mais opções' }).click();
   await dialog.getByLabel('Tema', { exact: true }).selectOption('dark');
   await dialog.getByRole('button', { name: 'Salvar', exact: true }).click();
   await expect(dialog).not.toBeVisible();

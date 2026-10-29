@@ -12,9 +12,15 @@ export const useFinance = create((set, get) => ({
   loading: false,
   busy: false,
   error: null,
-  enterDemo: () => {
+  enterDemo: ({ empty: blank = false } = {}) => {
     epoch++;
-    set({ uid: 'demo', demo: true, data: demoData(), loading: false, error: null });
+    set({
+      uid: 'demo',
+      demo: true,
+      data: blank ? empty() : demoData(),
+      loading: false,
+      error: null,
+    });
   },
   clear: () => {
     epoch++;

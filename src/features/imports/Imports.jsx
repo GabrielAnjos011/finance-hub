@@ -7,18 +7,20 @@ import { parseFile, suggestMapping, normalizeRows } from '../../services/importe
 import { money } from '../../utils/money';
 import { dateLabel } from '../../utils/dates';
 export default function Imports() {
-  const { data, perform, confirm, notify } = useWorkspace(),
+  const { data, perform, confirm, notify, openForm } = useWorkspace(),
     commit = useFinance((s) => s.commit);
   const [parsed, setParsed] = useState(null),
     [mapping, setMapping] = useState({}),
     [accountId, setAccountId] = useState(''),
     [rows, setRows] = useState([]),
     [status, setStatus] = useState(''),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [previewPage, setPreviewPage] = useState(1);
   const config = data.settings.find((s) => s.id === 'preferences');
   async function choose(file) {
     if (!file) return;
     setRows([]);
+    setPreviewPage(1);
     setParsed(null);
     setStatus('Processando localmente…');
     setBusy(true);
@@ -35,6 +37,7 @@ export default function Imports() {
     }
   }
   async function preview() {
+    setPreviewPage(1);
     setRows(
       await normalizeRows(
         parsed,
@@ -90,6 +93,21 @@ export default function Imports() {
         text="Seu arquivo é processado no navegador. Só as linhas revisadas são gravadas no Firestore."
       />
       <Panel title="1. Escolha a conta e o arquivo" action={<Upload size={21} />}>
+        {!data.accounts.length && (
+          <div className="prerequisite">
+            <h3>Primeiro, cadastre a conta deste extrato</h3>
+            <p>
+              Assim os movimentos ficam no lugar certo. Seu arquivo só será processado depois que
+              você escolher a conta.
+            </p>
+            <button
+              className="primary"
+              onClick={() => openForm('accounts', null, {}, (record) => setAccountId(record.id))}
+            >
+              Cadastrar conta do extrato
+            </button>
+          </div>
+        )}
         <div className="form-grid">
           <label>
             Conta do extrato
@@ -113,11 +131,14 @@ export default function Imports() {
             <input
               type="file"
               accept=".csv,.ofx,.xlsx,.pdf,.txt"
-              disabled={busy}
+              disabled={busy || !accountId}
               onChange={(e) => perform(() => choose(e.target.files[0]))}
             />
           </label>
         </div>
+        {data.accounts.length > 0 && !accountId && (
+          <p className="field-hint">Escolha a conta acima para liberar a seleção do arquivo.</p>
+        )}
         <p className="micro">
           CSV, OFX e primeira aba de XLSX. PDF: linhas com data completa, descrição e valor;
           formatos não reconhecidos precisam ser convertidos. Nenhum arquivo bruto é armazenado.
@@ -185,43 +206,68 @@ export default function Imports() {
                 </tr>
               </thead>
               <tbody>
-                {rows.slice(0, 5000).map((r, index) => (
-                  <tr key={r.id + '_' + index}>
-                    <td>
-                      <input
-                        aria-label={'Incluir linha ' + (index + 1)}
-                        type="checkbox"
-                        checked={r.selected}
-                        disabled={r.duplicate || Boolean(r.error)}
-                        onChange={(e) => update(index, 'selected', e.target.checked)}
-                      />
-                    </td>
-                    <td>{r.record ? dateLabel(r.record.date) : '—'}</td>
-                    <td>
-                      {r.record?.description || 'Linha inválida'}
-                      <small className={r.duplicate || r.error ? 'negative' : 'muted'}>
-                        {r.error || (r.duplicate ? 'Duplicado: não será gravado.' : r.warning)}
-                      </small>
-                    </td>
-                    <td>
-                      {r.record && (
-                        <select
-                          aria-label={'Categoria linha ' + (index + 1)}
-                          value={r.record.category}
-                          onChange={(e) => update(index, 'category', e.target.value)}
-                        >
-                          {(config?.categories || ['Outros']).map((c) => (
-                            <option key={c}>{c}</option>
-                          ))}
-                        </select>
-                      )}
-                    </td>
-                    <td>{r.record ? money(r.record.amountCents) : '—'}</td>
-                  </tr>
-                ))}
+                {rows.slice((previewPage - 1) * 100, previewPage * 100).map((r, localIndex) => {
+                  const index = (previewPage - 1) * 100 + localIndex;
+                  return (
+                    <tr key={r.id + '_' + index}>
+                      <td>
+                        <input
+                          aria-label={'Incluir linha ' + (index + 1)}
+                          type="checkbox"
+                          checked={r.selected}
+                          disabled={r.duplicate || Boolean(r.error)}
+                          onChange={(e) => update(index, 'selected', e.target.checked)}
+                        />
+                      </td>
+                      <td>{r.record ? dateLabel(r.record.date) : '—'}</td>
+                      <td>
+                        {r.record?.description || 'Linha inválida'}
+                        <small className={r.duplicate || r.error ? 'negative' : 'muted'}>
+                          {r.error || (r.duplicate ? 'Duplicado: não será gravado.' : r.warning)}
+                        </small>
+                      </td>
+                      <td>
+                        {r.record && (
+                          <select
+                            aria-label={'Categoria linha ' + (index + 1)}
+                            value={r.record.category}
+                            onChange={(e) => update(index, 'category', e.target.value)}
+                          >
+                            {(config?.categories || ['Outros']).map((c) => (
+                              <option key={c}>{c}</option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
+                      <td>{r.record ? money(r.record.amountCents) : '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+          {rows.length > 100 && (
+            <div className="preview-pagination">
+              <button
+                className="secondary"
+                disabled={previewPage === 1}
+                onClick={() => setPreviewPage((page) => page - 1)}
+              >
+                Página anterior
+              </button>
+              <span>
+                Linhas {(previewPage - 1) * 100 + 1} a {Math.min(previewPage * 100, rows.length)} de{' '}
+                {rows.length}
+              </span>
+              <button
+                className="secondary"
+                disabled={previewPage * 100 >= rows.length}
+                onClick={() => setPreviewPage((page) => page + 1)}
+              >
+                Próxima página
+              </button>
+            </div>
+          )}
           <button
             className="primary"
             disabled={!rows.some((r) => r.selected)}

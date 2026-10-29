@@ -5,6 +5,7 @@ import { useFinance } from '../../store/useFinance';
 import { useAuth } from '../auth/AuthProvider';
 import { diagnostics } from '../../services/errors';
 import { dateLabel } from '../../utils/dates';
+import SetupGuide from '../onboarding/SetupGuide';
 export default function Settings({ summary }) {
   const { openForm, perform } = useWorkspace(),
     { user } = useAuth(),
@@ -22,6 +23,7 @@ export default function Settings({ summary }) {
           </button>
         }
       />
+      <SetupGuide always />
       <div className="two-columns">
         <Panel title="Seu planejamento">
           <div className="detail-row">
@@ -30,7 +32,7 @@ export default function Settings({ summary }) {
           </div>
           <div className="detail-row">
             <span>Dia principal do salário</span>
-            <strong>{summary.config.salaryDay || 25}</strong>
+            <strong>{summary.config.salaryDay || 'A informar'}</strong>
           </div>
           <div className="detail-row">
             <span>Meses de proteção</span>

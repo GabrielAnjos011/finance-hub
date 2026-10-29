@@ -26,7 +26,7 @@ jobs:
       - run: npm test
       - run: npm run test:rules
       - run: npm run test:static
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e
       - name: Require public Firebase web configuration
         if: github.event_name != 'pull_request'

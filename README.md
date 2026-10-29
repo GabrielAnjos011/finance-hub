@@ -2,7 +2,7 @@
 
 Aplicação estática de organização e planejamento financeiro pessoal em português brasileiro. Dados reais são armazenados no Firestore e protegidos por UID e lista de autorização. Sem backend próprio, Cloud Functions, integrações bancárias ou API de IA paga.
 
-**Comece pelo [guia para configurar do zero](COMECE_AQUI.md).** O projeto não foi publicado nem conectado a um Firebase de produção: o proprietário ainda precisa criar esses recursos e configurar as variáveis públicas.
+**Comece pelo [guia para configurar do zero](COMECE_AQUI.md).** Para uma instalação nova, o guia explica como criar os recursos e configurar as variáveis públicas. As melhorias de primeiro uso e formulários estão descritas em [UX_UPDATE.md](UX_UPDATE.md).
 
 ## Execução
 
@@ -25,7 +25,7 @@ npm run build
 npm run preview
 ```
 
-Antes dos testes E2E, execute `npx playwright install chromium`. O script de regras usa um Java portátil em `.tools/java`, se existente no Windows, ou o Java instalado no sistema. Não precisa de login Firebase para testar `demo-finance-hub`.
+Antes dos testes E2E, execute `npx playwright install chromium webkit`. O script de regras usa um Java portátil em `.tools/java`, se existente no Windows, ou o Java instalado no sistema. Não precisa de login Firebase para testar `demo-finance-hub`.
 
 ## Funcionalidades entregues
 

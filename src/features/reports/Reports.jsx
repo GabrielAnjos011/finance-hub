@@ -66,7 +66,7 @@ export default function Reports({ summary, range, month }) {
               patrimonio: summary.wealth,
               reserva: summary.reserve,
               compromissos: summary.obligations,
-              projecao: summary.available,
+              projecao: summary.projectionReady ? summary.available : null,
             },
           }
         : {}),
@@ -79,7 +79,7 @@ export default function Reports({ summary, range, month }) {
     const md = `# Análise de Saúde Financeira\n\nPeríodo: ${range.start} a ${range.end}\nSituação: ${structured.saude}\nConfiança: ${structured.confianca}\n\n${structured.motivos.map((r) => '- ' + r).join('\n')}\n\n${
       includeValues
         ? Object.entries(structured.valores_centavos)
-            .map(([k, v]) => `${k}: ${money(v)}`)
+            .map(([k, v]) => `${k}: ${v === null ? 'Não configurado' : money(v)}`)
             .join('\n')
         : ''
     }\n\n${includeCategories ? totals.map((c) => `${c.name}: ${money(c.value)}`).join('\n') : ''}\n\n${structured.premissas}\n\n${structured.solicitacao}`;

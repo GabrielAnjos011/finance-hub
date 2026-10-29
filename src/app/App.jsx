@@ -34,6 +34,8 @@ import { useFinance } from '../store/useFinance';
 import { overview, alerts } from '../features/financial-health/engine';
 import { periodRange, shiftMonth, today } from '../utils/dates';
 import { safeError } from '../services/errors';
+import { useToday } from '../hooks/useToday';
+import { useMobileKeyboard } from '../hooks/useMobileKeyboard';
 const Dashboard = lazy(() => import('../features/dashboard/Dashboard'));
 const Transactions = lazy(() => import('../features/transactions/Transactions'));
 const Accounts = lazy(() => import('../features/accounts/Accounts'));
@@ -90,6 +92,8 @@ function Loading() {
   );
 }
 function Shell() {
+  const at = useToday();
+  const keyboardOpen = useMobileKeyboard();
   const { data, demo, loading, error, refresh } = useFinance(),
     { logout } = useAuth(),
     { openForm, perform } = useWorkspace();
@@ -106,7 +110,7 @@ function Shell() {
     () => periodRange(month, mode, config.salaryDay || 25, custom),
     [month, mode, config.salaryDay, custom],
   );
-  const summary = useMemo(() => overview(data, range, today()), [data, range]);
+  const summary = useMemo(() => overview(data, range, at), [data, range, at]);
   const count = alerts(data, summary, today()).filter(
     (a) => !data.alertStates.some((s) => s.id === a.id && (s.read || s.snoozeUntil >= today())),
   ).length;
@@ -139,9 +143,9 @@ function Shell() {
     media.addEventListener('change', apply);
     return () => media.removeEventListener('change', apply);
   }, [config.theme]);
-  const common = { summary, range, month };
+  const common = { summary, range, month, at };
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-keyboard-open={keyboardOpen}>
       {menu && <div className="menu-backdrop" onClick={() => setMenu(false)} />}
       <aside className={'sidebar ' + (menu ? 'open' : '')}>
         <NavLink to="/" className="brand">

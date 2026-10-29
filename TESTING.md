@@ -7,7 +7,7 @@ npm ci
 npm test
 npm run test:rules
 npm run test:static
-npx playwright install chromium
+npx playwright install chromium webkit
 npm run test:e2e
 npm run build
 ```
@@ -21,21 +21,23 @@ Necessários: Node 24 e Java 21. Emuladores baixam artefatos oficiais na primeir
 | `tests/finance.test.js`         | BRL/centavos, resíduo de parcelas, datas, fechamento, ciclo salário, referência de saldo, transferências, pagamentos parciais e estornos, patrimônio, reserva e objetivos, projeção conservadora, saúde, simulação, recorrências previstas |
 | `tests/import-export.test.js`   | CSV brasileiro, OFX/FITID, datas impossíveis, fingerprints por conta, semelhantes/faturas para revisão, fórmula CSV, integridade e backup AES-GCM com senha correta/incorreta                                                              |
 | `tests/ui.test.jsx`             | Sem cadastro público, demonstração explícita e limpeza ao sair                                                                                                                                                                             |
-| `tests/rules/security.test.js`  | 31 cenários de isolamento, schemas, revisões, autorização, mês fechado, convites, lock bilateral, consentimento, dados privados, terceiros e revogação                                                                                     |
+| `tests/rules/security.test.js`  | 33 cenários de isolamento, schemas, revisões, autorização, mês fechado, convites, lock bilateral, consentimento, dados privados, revisão diária e planos de saldo zero sem conta                                                           |
 | `tests/rules/auth-flow.test.js` | Duas contas reais no Authentication Emulator, bloqueio antes da autorização, escrita própria, recusa de acesso cruzado e novo login                                                                                                        |
 | `tests/e2e/flows.spec.js`       | Login demo/rotas/logout, criação de conta e despesa com conferência do saldo, filtros, consentimento IA, prévia CSV/XLSX/PDF, overflow, manifest/SW/ícones e contraste no tema escuro                                                      |
 
-Playwright testa o build de produção, reduzindo diferenças de carregamento de módulos do Vite dev. Os mesmos fluxos rodam em Desktop Chrome, viewport Pixel 7 e viewport iPhone 13 com Chromium. As capturas de demonstração são gravadas em `test-results/dashboard-*.png`, diretório ignorado pelo Git. Traces e screenshot de falha também ficam nesse diretório.
+Playwright testa o build de produção, reduzindo diferenças de carregamento de módulos do Vite dev. Os mesmos fluxos rodam em Desktop Chrome, viewport Pixel 7 e viewport iPhone 13 com WebKit. As capturas de demonstração são gravadas em `test-results/dashboard-*.png`, diretório ignorado pelo Git. Traces e screenshot de falha também ficam nesse diretório.
 
 ## O que esses testes não comprovam
 
-- Publicação, permissões do repositório e GitHub Actions remotos: o repositório ainda precisa ser criado.
+A suíte `tests/onboarding.test.jsx` verifica pré-requisitos, campos condicionais, faturas, ajuste de saldo, datas futuras, alocações e revisão diária. A suíte `tests/e2e/guided-use.spec.js` percorre primeiro uso, cadastro auxiliar com rascunho, recorrência, planos sem conta, faturas, reabertura, revisão, importação paginada e comportamento mobile. Consulte [VALIDATION.md](VALIDATION.md) para os resultados da atualização.
+
+- Publicação, permissões do repositório e GitHub Actions remotos: precisam ser conferidos na execução remota desta atualização.
 - Login/recuperação em um projeto Firebase de produção, recebimento real de e-mail, cotas reais e domínios.
-- Safari/WebKit real, teclado nativo, orientação e instalação em aparelhos físicos.
+- Safari em aparelho físico, teclado nativo, orientação e instalação em aparelhos físicos.
 - Uso prolongado com dezenas de milhares de registros, rollback de restauração em múltiplos lotes e todos os formatos de extratos bancários.
 - Pentest independente, requisitos regulatórios ou diagnóstico financeiro certificado.
 
-Os dados de teste e da demonstração são sintéticos. Nunca substitua fixtures por extratos pessoais. Os testes de regras chamam o SDK diretamente, sem depender das rotas da interface.
+Os dados de teste e da demonstração são sintéticos. O cliente Firebase dos testes unitários é substituído por um mock; o build E2E recebe as quatro variáveis Firebase vazias para nunca usar o .env de produção. Nunca substitua fixtures por extratos pessoais. Os testes de regras chamam o SDK diretamente, sem depender das rotas da interface.
 
 ## Regressão e publicação
 

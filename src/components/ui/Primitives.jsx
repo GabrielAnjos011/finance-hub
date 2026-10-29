@@ -40,20 +40,31 @@ export function Progress({ value, label }) {
     </div>
   );
 }
-export function Modal({ title, children, onClose }) {
+export function Modal({ title, children, onClose, active = true }) {
   const ref = useRef(null);
   useEffect(() => {
     const dialog = ref.current;
-    dialog.showModal();
-    return () => dialog.close();
-  }, []);
+    if (active && !dialog.open) dialog.showModal();
+    if (!active && dialog.open) dialog.close();
+    return () => {
+      if (dialog.open) dialog.close();
+    };
+  }, [active]);
   return (
     <dialog
       ref={ref}
       className="modal"
       onCancel={onClose}
       onClick={(e) => {
-        if (e.target === ref.current) onClose();
+        if (e.target !== ref.current) return;
+        const bounds = ref.current.getBoundingClientRect();
+        if (
+          e.clientX < bounds.left ||
+          e.clientX > bounds.right ||
+          e.clientY < bounds.top ||
+          e.clientY > bounds.bottom
+        )
+          onClose();
       }}
     >
       <div className="modal-header">
