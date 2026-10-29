@@ -1,0 +1,64 @@
+name: Validate and deploy Finance Hub
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm test
+      - run: npm run test:rules
+      - run: npm run test:static
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Require public Firebase web configuration
+        if: github.event_name != 'pull_request'
+        env:
+          FIREBASE_PROJECT: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          FIREBASE_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          FIREBASE_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          FIREBASE_APP: ${{ vars.VITE_FIREBASE_APP_ID }}
+        run: |
+          test -n "$FIREBASE_PROJECT" && test -n "$FIREBASE_KEY" && test -n "$FIREBASE_DOMAIN" && test -n "$FIREBASE_APP" || { echo 'Configure the four public Firebase repository variables before deployment.'; exit 1; }
+      - name: Build for GitHub Pages
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+        run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

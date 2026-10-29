@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function enabled(uid) { return exists(/databases/$(database)/documents/authorizedUsers/$(uid)) && get(/databases/$(database)/documents/authorizedUsers/$(uid)).data.enabled == true; }
+  function signed() { return request.auth != null && enabled(request.auth.uid); }
+  function own(uid) { return signed() && request.auth.uid == uid; }
+  function text(value,max) { return value is string && value.size() <= max; }
+  function cash(value) { return value is int && value >= 0 && value <= 100000000000; }
+  function date(value) { return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+  function month(value) { return value is string && value.matches('^[0-9]{4}-[0-9]{2}$'); }
+  function base(d,uid) { return d.ownerUid == uid && d.schemaVersion == 1 && d.revision is int && d.revision > 0; }
+  function keys(d,fields) { return d.keys().hasAll(fields) && d.keys().hasOnly(fields.concat(['ownerUid','schemaVersion','revision'])); }
+  function account(d) { return keys(d,['name','institution','kind','initialCents','referenceDate','purpose','spendable','includeInWealth']) && text(d.name,100) && d.name.size()>0 && text(d.institution,100) && d.kind in ['checking','payment','cash','reserve','investment','linked'] && d.initialCents is int && d.initialCents >= -100000000000 && d.initialCents <= 100000000000 && date(d.referenceDate) && text(d.purpose,200) && d.spendable is bool && d.includeInWealth is bool; }
+  function transaction(d) { return keys(d,['description','amountCents','category','type','date','competence','dueDate','status','accountId','destinationId','cardId','groupId','installment','installments','tags','notes','recurrence']) && text(d.description,200) && d.description.size()>0 && d.amountCents is int && d.amountCents != 0 && d.amountCents >= -100000000000 && d.amountCents <= 100000000000 && (d.amountCents>0 || d.type=='adjustment') && text(d.category,100) && d.type in ['income','expense','transfer','card_purchase','card_payment','refund','adjustment'] && date(d.date) && month(d.competence) && date(d.dueDate) && d.status in ['planned','confirmed'] && text(d.accountId,128) && text(d.destinationId,128) && text(d.cardId,128) && text(d.groupId,128) && d.installment is int && d.installments is int && d.installment>=1 && d.installment<=d.installments && d.installments<=120 && text(d.tags,200) && text(d.notes,1000) && d.recurrence is bool && (d.type!='transfer' || (d.accountId!=d.destinationId && d.destinationId.size()>0)) && ((d.type in ['card_purchase','refund'] && d.cardId.size()>0) || (d.accountId.size()>0)); }
+  function card(d) { return keys(d,['name','institution','limitCents','closingDay','dueDay','accountId','active']) && text(d.name,100) && text(d.institution,100) && cash(d.limitCents) && d.closingDay is int && d.closingDay>=1 && d.closingDay<=31 && d.dueDay is int && d.dueDay>=1 && d.dueDay<=31 && text(d.accountId,128) && d.active is bool; }
+  function budget(d) { return keys(d,['month','category','limitCents']) && month(d.month) && text(d.category,100) && cash(d.limitCents); }
+  function fund(d) { return keys(d,['name','purpose','accountId','allocatedCents','targetCents','monthlyCents']) && text(d.name,100) && d.purpose in ['emergency','other'] && text(d.accountId,128) && cash(d.allocatedCents) && cash(d.targetCents) && cash(d.monthlyCents); }
+  function goal(d) { return keys(d,['name','targetCents','savedCents','monthlyCents','deadline','priority','description','accountId']) && text(d.name,100) && cash(d.targetCents) && cash(d.savedCents) && cash(d.monthlyCents) && date(d.deadline) && d.priority in ['high','medium','low'] && text(d.description,500) && text(d.accountId,128); }
+  function settings(d) { return keys(d,['name','salaryDay','essentialCents','reserveMonths','safetyCents','monthlyContributionCents','donationPercent','theme','categories','notifications','updatedDate']) && text(d.name,100) && d.salaryDay is int && d.salaryDay>=1 && d.salaryDay<=31 && cash(d.essentialCents) && d.reserveMonths is int && d.reserveMonths>=1 && d.reserveMonths<=36 && cash(d.safetyCents) && cash(d.monthlyContributionCents) && d.donationPercent is number && d.donationPercent>=0 && d.donationPercent<=100 && d.theme in ['light','dark','system'] && d.categories is list && d.categories.size()<=100 && d.notifications is bool && date(d.updatedDate); }
+  function closure(d) { return keys(d,['month','closed','incomeCents','expenseCents','events']) && month(d.month) && d.closed is bool && cash(d.incomeCents) && d.expenseCents is int && d.events is list && d.events.size()<=100; }
+  function alertState(d) { return keys(d,['read','snoozeUntil']) && d.read is bool && date(d.snoozeUntil); }
+  function model(module,d) { return (module=='accounts' && account(d)) || (module=='transactions' && transaction(d)) || (module=='cards' && card(d)) || (module=='budgets' && budget(d)) || (module=='funds' && fund(d)) || (module=='goals' && goal(d)) || (module=='settings' && settings(d)) || (module=='closures' && closure(d)) || (module=='alertStates' && alertState(d)); }
+  function openMonth(uid,d) { let m = d.type in ['card_purchase','refund','card_payment'] ? d.competence : d.date.split('-')[0]+'-'+d.date.split('-')[1]; return !exists(/databases/$(database)/documents/users/$(uid)/closures/$(m)) || get(/databases/$(database)/documents/users/$(uid)/closures/$(m)).data.closed == false; }
+  match /authorizedUsers/{uid} { allow get: if request.auth!=null && request.auth.uid==uid; allow list,write: if false; }
+  match /users/{uid}/{module}/{id} {
+   allow read: if own(uid) && module in ['accounts','transactions','cards','budgets','funds','goals','settings','closures','alertStates'];
+   allow create: if own(uid) && base(request.resource.data,uid) && request.resource.data.revision==1 && model(module,request.resource.data) && (module!='transactions' || openMonth(uid,request.resource.data));
+   allow update: if own(uid) && base(request.resource.data,uid) && request.resource.data.revision==resource.data.revision+1 && model(module,request.resource.data) && (module!='transactions' || (openMonth(uid,resource.data) && openMonth(uid,request.resource.data)));
+   allow delete: if own(uid) && module in ['accounts','transactions','cards','budgets','funds','goals','alertStates'] && (module!='transactions' || openMonth(uid,resource.data));
+  }
+  function invitePath(id) { return /databases/$(database)/documents/invites/$(id); }
+  function couplePath(id) { return /databases/$(database)/documents/couples/$(id); }
+  function membershipPath(uid) { return /databases/$(database)/documents/memberships/$(uid); }
+  function active(id) { let c=get(couplePath(id)).data; return signed() && c.status=='active' && request.auth.uid in [c.memberA,c.memberB]; }
+  match /invites/{id} {
+   allow get: if signed() && request.auth.uid in [resource.data.senderUid,resource.data.recipientUid];
+   allow list,delete: if false;
+   allow create: if signed() && request.resource.data.keys().hasOnly(['senderUid','recipientUid','expiresAt','state']) && request.resource.data.senderUid==request.auth.uid && request.resource.data.recipientUid!=request.auth.uid && enabled(request.resource.data.recipientUid) && request.resource.data.expiresAt is timestamp && request.resource.data.expiresAt>request.time && request.resource.data.expiresAt<request.time+duration.value(8,'d') && request.resource.data.state=='pending' && !exists(membershipPath(request.auth.uid));
+   allow update: if signed() && resource.data.state=='pending' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']) && ((request.auth.uid==resource.data.senderUid && request.resource.data.state=='canceled') || (request.auth.uid==resource.data.recipientUid && resource.data.expiresAt>request.time && (request.resource.data.state=='declined' || (request.resource.data.state=='accepted' && getAfter(couplePath(id)).data.status=='active' && getAfter(couplePath(id)).data.memberA==resource.data.senderUid && getAfter(couplePath(id)).data.memberB==resource.data.recipientUid))));
+  }
+  match /memberships/{uid} {
+   allow get: if own(uid);
+   allow list,update: if false;
+   allow create: if signed() && request.resource.data.keys().hasOnly(['coupleId']) && getAfter(couplePath(request.resource.data.coupleId)).data.status=='active' && uid in [getAfter(couplePath(request.resource.data.coupleId)).data.memberA,getAfter(couplePath(request.resource.data.coupleId)).data.memberB] && request.auth.uid==get(invitePath(request.resource.data.coupleId)).data.recipientUid && getAfter(invitePath(request.resource.data.coupleId)).data.state=='accepted';
+   allow delete: if active(resource.data.coupleId) && getAfter(couplePath(resource.data.coupleId)).data.status=='revoked';
+  }
+  match /couples/{id} {
+   allow get: if active(id);
+   allow list,delete: if false;
+   allow create: if signed() && request.resource.data.keys().hasOnly(['memberA','memberB','status']) && request.resource.data.status=='active' && get(invitePath(id)).data.state=='pending' && get(invitePath(id)).data.expiresAt>request.time && request.auth.uid==get(invitePath(id)).data.recipientUid && request.resource.data.memberA==get(invitePath(id)).data.senderUid && request.resource.data.memberB==request.auth.uid && getAfter(invitePath(id)).data.state=='accepted' && !exists(membershipPath(request.resource.data.memberA)) && !exists(membershipPath(request.resource.data.memberB)) && getAfter(membershipPath(request.resource.data.memberA)).data.coupleId==id && getAfter(membershipPath(request.resource.data.memberB)).data.coupleId==id;
+   allow update: if active(id) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) && request.resource.data.status=='revoked' && !existsAfter(membershipPath(resource.data.memberA)) && !existsAfter(membershipPath(resource.data.memberB));
+   match /indicators/{uid} {
+    allow get: if active(id) && (uid==request.auth.uid || resource.data.consent==true);
+    allow list,delete: if false;
+    allow create,update: if active(id) && request.auth.uid==uid && request.resource.data.keys().hasOnly(['consent','health','reserve','organization','commitment','updatedDate']) && request.resource.data.consent is bool && request.resource.data.health in ['Saudável','Atenção','Risco elevado','Dados insuficientes'] && request.resource.data.reserve in ['Adequada','Em construção','Não informado'] && request.resource.data.organization in ['Em dia','Revisar','Não informado'] && request.resource.data.commitment in ['Moderado','Elevado','Não informado'] && date(request.resource.data.updatedDate);
+   }
+   match /goals/{goalId} {
+    allow read: if active(id);
+    allow create: if active(id) && request.resource.data.keys().hasOnly(['name','targetCents','deadline','createdBy','revision']) && text(request.resource.data.name,100) && cash(request.resource.data.targetCents) && date(request.resource.data.deadline) && request.resource.data.createdBy==request.auth.uid && request.resource.data.revision==1;
+    allow update,delete: if false;
+    match /contributions/{contributionId} {
+     allow read: if active(id);
+     allow create: if active(id) && exists(/databases/$(database)/documents/couples/$(id)/goals/$(goalId)) && request.resource.data.keys().hasOnly(['uid','amountCents','date']) && request.resource.data.uid==request.auth.uid && cash(request.resource.data.amountCents) && request.resource.data.amountCents>0 && date(request.resource.data.date);
+     allow update,delete: if false;
+    }
+   }
+  }
+  match /{document=**} { allow read,write: if false; }
+ }
+}

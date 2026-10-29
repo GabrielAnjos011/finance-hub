@@ -1,0 +1,8 @@
+node_modules
+dist
+.tools
+test-results
+playwright-report
+package-lock.json
+*.png
+*-debug.log

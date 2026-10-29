@@ -1,0 +1,55 @@
+export const categories = [
+  'Moradia',
+  'Alimentação',
+  'Transporte',
+  'Saúde',
+  'Educação',
+  'Lazer',
+  'Assinaturas',
+  'Compras',
+  'Dívidas',
+  'Doações',
+  'Viagens',
+  'Outros',
+];
+export const kinds = {
+  checking: 'Conta corrente',
+  payment: 'Conta de pagamento',
+  cash: 'Dinheiro',
+  reserve: 'Reserva',
+  investment: 'Investimento',
+  linked: 'Conta vinculada',
+};
+export const transactionTypes = {
+  income: 'Receita',
+  expense: 'Despesa',
+  transfer: 'Transferência / aporte',
+  card_purchase: 'Compra no cartão',
+  card_payment: 'Pagamento de fatura',
+  refund: 'Estorno de cartão',
+  adjustment: 'Ajuste de saldo',
+};
+export const defaultSettings = {
+  name: '',
+  salaryDay: 25,
+  essentialCents: 0,
+  reserveMonths: 6,
+  safetyCents: 0,
+  monthlyContributionCents: 0,
+  donationPercent: 0,
+  theme: 'system',
+  categories,
+  notifications: true,
+  updatedDate: '',
+};
+export const collections = [
+  'accounts',
+  'transactions',
+  'cards',
+  'budgets',
+  'funds',
+  'goals',
+  'settings',
+  'closures',
+  'alertStates',
+];
